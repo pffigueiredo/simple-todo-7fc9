@@ -1,10 +1,29 @@
 
+import { db } from '../db';
+import { todosTable } from '../db/schema';
 import { type DeleteTodoInput } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export async function deleteTodo(input: DeleteTodoInput): Promise<{ success: boolean }> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is deleting a todo item from the database.
-    // It should find the todo by ID and remove it from the database.
-    // Should return success status and throw an error if todo with given ID doesn't exist.
-    return Promise.resolve({ success: true });
-}
+export const deleteTodo = async (input: DeleteTodoInput): Promise<{ success: boolean }> => {
+  try {
+    // First check if the todo exists
+    const existingTodos = await db.select()
+      .from(todosTable)
+      .where(eq(todosTable.id, input.id))
+      .execute();
+
+    if (existingTodos.length === 0) {
+      throw new Error(`Todo with id ${input.id} not found`);
+    }
+
+    // Delete the todo
+    await db.delete(todosTable)
+      .where(eq(todosTable.id, input.id))
+      .execute();
+
+    return { success: true };
+  } catch (error) {
+    console.error('Todo deletion failed:', error);
+    throw error;
+  }
+};
